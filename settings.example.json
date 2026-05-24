@@ -1,0 +1,42 @@
+{
+  "_readme": "jarvis-graphify LLM config. Copy to jarvis-graphify-in/settings.json in your project. Set 'backend' to 'ollama', 'litellm', or 'bedrock'. Only the matching block needs to be filled in.",
+
+  "llm": {
+
+    "backend": "ollama",
+
+    "ollama": {
+      "_comment": "Local or self-hosted Ollama server. Supports any model available via Ollama (qwen3, llama3, mistral, phi3, gemma2, deepseek, etc.). Start: ollama serve | Pull: ollama pull qwen3:4b",
+      "base_url": "http://127.0.0.1:11434",
+      "model": "qwen3:4b",
+      "ssl_verify": true
+    },
+
+    "litellm": {
+      "_comment": "Any OpenAI-compatible API: LiteLLM proxy, vLLM, TensorRT-LLM, custom Python OpenAI-style APIs, OpenRouter (https://openrouter.ai), Azure OpenAI, Groq, Together AI, Anyscale, and more.",
+      "base_url": "https://your-litellm-server.example.com",
+      "model": "gpt-4o",
+      "api_key": "sk-YOUR-KEY-HERE",
+      "api_key_env": "LITELLM_API_KEY",
+      "ssl_verify": true,
+      "_ssl_note": "Set ssl_verify to false for corporate or self-signed certificates"
+    },
+
+    "bedrock": {
+      "_comment": "AWS Bedrock — Claude, Llama, Mistral, Titan and more. Credentials: (1) keys below, (2) AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars, (3) ~/.aws/credentials, (4) IAM role.",
+      "region": "us-east-1",
+      "model_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
+      "aws_access_key_id": "",
+      "aws_secret_access_key": "",
+      "aws_session_token": "",
+      "_model_examples": {
+        "claude_haiku":  "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "claude_sonnet": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "llama3_70b":    "meta.llama3-3-70b-instruct-v1:0",
+        "mistral_large": "mistral.mistral-large-2402-v1:0",
+        "titan_premier": "amazon.titan-text-premier-v1:0"
+      }
+    }
+
+  }
+}
