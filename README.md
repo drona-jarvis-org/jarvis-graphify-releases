@@ -235,19 +235,127 @@ pip install boto3
 ## All commands
 
 ```bash
+# ── Full scan ────────────────────────────────────────────────────────────────
 jarvis-graphify .                        # full scan — current directory
 jarvis-graphify /path/to/project         # scan any directory
 jarvis-graphify . --no-enrich            # structure + sensitive detection only (no LLM)
 jarvis-graphify . --out /tmp/my-graph    # custom output directory
 jarvis-graphify . -v                     # verbose — show each node as enriched
 
+# ── Incremental update ───────────────────────────────────────────────────────
+jarvis-graphify update                   # re-enrich only new/modified files (fast)
+jarvis-graphify update /path/to/project  # update a specific project
+jarvis-graphify update --force-libraries # also re-enrich library summaries
+jarvis-graphify update -v                # verbose — show which nodes are updated
+
+# ── Config + IDE integration ─────────────────────────────────────────────────
 jarvis-graphify scan .                   # explicit subcommand form
 jarvis-graphify setup                    # create config in current directory
 jarvis-graphify setup --force            # overwrite existing config
 
+jarvis-graphify integrate                # wire graph into all AI tools (Cursor + Claude Code + Codex)
+jarvis-graphify integrate --cursor       # Cursor only  → .cursor/rules/jarvis-graphify.mdc
+jarvis-graphify integrate --claude       # Claude Code  → CLAUDE.md
+jarvis-graphify integrate --codex        # Codex / OpenAI Agents → AGENTS.md
+
 jarvis-graphify --version
 jarvis-graphify --help
 ```
+
+---
+
+## Incremental update (`jarvis-graphify update`)
+
+After the first full scan, use `update` instead of rescanning everything when you add or modify files:
+
+```bash
+jarvis-graphify update                   # re-enrich only changed files
+jarvis-graphify update --force-libraries # also refresh library summaries
+jarvis-graphify update -v                # verbose — show each updated node
+```
+
+| File state | What happens |
+|-----------|-------------|
+| **Modified** (mtime > graph.json) | All nodes in this file are re-enriched |
+| **New file** | Scanned and enriched from scratch |
+| **Deleted file** | Its nodes are removed from the graph |
+| **Unchanged file** | Existing summaries reused — no LLM call |
+| **Library / import** | Summary always reused (use `--force-libraries` to refresh) |
+
+> First run with `update`: if no `graph.json` exists yet, it performs a full scan automatically.
+
+---
+
+## Exclusions
+
+Control what gets LLM summaries and what gets sensitivity scanning via the `exclude`
+section in `jarvis-graphify-in/settings.json` (created by `jarvis-graphify setup`):
+
+```json
+{
+  "exclude": {
+    "libraries": ["os", "sys", "re", "json", "typing", "abc"],
+    "methods":   ["__init__", "__str__", "__repr__", "__eq__", "__hash__"],
+    "enrich_files":      [],
+    "sensitivity_files": ["tests/**", "**/*.example"]
+  }
+}
+```
+
+| Key | Effect |
+|-----|--------|
+| `libraries` | Skip LLM enrichment for these library/import node names |
+| `methods` | Skip LLM enrichment for methods/functions with these bare names |
+| `enrich_files` | Glob patterns — skip all enrichment for nodes in matching files |
+| `sensitivity_files` | Glob patterns — skip sensitive-data scanning for matching files |
+
+---
+
+## IDE deep-integration (`jarvis-graphify integrate`)
+
+After generating the graph, run `integrate` to automatically wire the knowledge graph
+into your AI coding tools:
+
+```bash
+cd /path/to/your-project
+jarvis-graphify .           # generate the graph
+jarvis-graphify integrate   # create IDE rules for all supported tools
+```
+
+This creates project-level rules that instruct each AI tool to **always consult the
+pre-computed knowledge graph before reading raw source files**, reducing token usage
+and giving the AI richer context on every query.
+
+### What gets created
+
+| Tool | File created / updated | Effect |
+|------|----------------------|--------|
+| **Cursor** | `.cursor/rules/jarvis-graphify.mdc` | `alwaysApply: true` rule — injected into every Cursor AI request |
+| **Claude Code** | `CLAUDE.md` | `<!-- jarvis-graphify:start/end -->` section — read by Claude Code on every session |
+| **Codex / OpenAI Agents** | `AGENTS.md` | Standard Codex agents knowledge file |
+
+### How the AI uses it
+
+Each generated rule instructs the AI:
+
+1. **Project questions** → read `jarvis-graphify-out/graph_understanding.md` first (pre-summarised, lowest token cost)
+2. **Node-level detail** → look up in `jarvis-graphify-out/graph.json` by `id` or `label`
+3. **Raw source** → only when implementation specifics aren't covered by the graph
+4. **Library questions** → check node `summary.DECAY` + `summary.VULNERABILITIES` in graph.json
+
+The rules also embed live stats (node count, edge count, entry points, sensitive files)
+pulled from `graph.json` so the AI knows the graph exists and what it contains.
+
+### Keeping it up to date
+
+Re-run both commands after significant code changes:
+
+```bash
+jarvis-graphify .           # regenerate graph
+jarvis-graphify integrate   # refresh IDE rules with updated stats
+```
+
+The `integrate` command is idempotent — it replaces the existing section rather than appending.
 
 ---
 
