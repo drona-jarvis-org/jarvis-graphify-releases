@@ -97,14 +97,42 @@ VER=$("$BIN" --version 2>&1 || true)
 
 echo ""
 info "Installed: $VER"
+
+# ── Configure (interactive) ───────────────────────────────────────────────
+# Pick a mode right at install time:
+#   1. custom_intelligence → then pick a backend:
+#        jarvis_server (asks url + key — also becomes the scan push target)
+#        litellm       (any OpenAI-style hosted model — asks url + key + model)
+#        ollama        (local — asks url + key + model)
+#   2-4. claude / cursor / codex → the AI assistant performs the scan
+#        (shown with a caution: sensitive project data goes to that provider)
+# Works even when piped via `curl | bash` by reading from /dev/tty.
+if [ -e /dev/tty ] && [ -t 1 ]; then
+    echo ""
+    read -r -p "Configure jarvis-graphify now? [Y/n] " CONFIGURE_NOW < /dev/tty || CONFIGURE_NOW="n"
+    if [ "${CONFIGURE_NOW:-y}" != "n" ] && [ "${CONFIGURE_NOW:-y}" != "N" ]; then
+        echo ""
+        "$BIN" configure < /dev/tty || warn "Configuration skipped — run later:  $TOOL configure"
+    else
+        info "Skipped. Configure any time:  $TOOL configure"
+    fi
+else
+    warn "Non-interactive install — configure later with:"
+    warn "  $TOOL configure                                    # guided"
+    warn "  $TOOL configure --mode ollama --url http://127.0.0.1:11434 --model_name qwen3:4b"
+    warn "  $TOOL configure --mode jarvis_server --url https://jarvis.example.com --key <KEY>"
+fi
+
 echo ""
 echo "  Next steps:"
 echo "    1. Restart terminal  (or: source ~/.zshrc)"
 echo "    2. Go to project:    cd /path/to/your-project"
-echo "    3. Create config:    $TOOL setup"
-echo "    4. Edit config:      open jarvis-graphify-in/settings.json"
-echo "    5. Run scan:         $TOOL ."
-echo "    6. Open graph:       open jarvis-graphify-out/graph.html"
+echo "    3. Configure:        $TOOL configure   (skip if done above)"
+echo "    4. Run scan:         $TOOL ."
+echo "    5. Open graph:       open jarvis-graphify-out/graph.html"
+echo ""
+echo "  Push results to a Jarvis server:"
+echo "    $TOOL server-config --url https://jarvis.example.com --api-key <KEY>"
 echo ""
 echo "  Docs: https://github.com/${REPO}#readme"
 echo ""

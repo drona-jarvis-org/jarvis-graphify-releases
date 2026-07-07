@@ -62,14 +62,40 @@ curl -fsSL https://raw.githubusercontent.com/drona-jarvis-org/jarvis-graphify-re
 source ~/.zshrc
 ```
 
-### 2 · Create config in your project
+### 2 · Configure — mode + backend (the installer offers this automatically)
 
 ```bash
 cd /path/to/your-project
-jarvis-graphify setup
+jarvis-graphify configure        # setup is an alias of the same flow
 ```
 
-This creates `jarvis-graphify-in/settings.json`. Edit it to set your LLM backend (see below).
+**Step 1 — pick a mode:**
+
+| # | Mode | Who does the enrichment | Data privacy |
+|---|------|------------------------|--------------|
+| 1 | `custom_intelligence` | Your own model (step 2 below) | Code stays with the endpoint you control |
+| 2 | `claude` | Claude Code — scan + update skills in `.claude/skills/` | ⚠ **sensitive project data goes to Anthropic** |
+| 3 | `cursor` | Cursor's AI — rules in `.cursor/rules/` | ⚠ **sensitive project data goes to Cursor** |
+| 4 | `codex` | Codex — workflow in `AGENTS.md` | ⚠ **sensitive project data goes to OpenAI** |
+
+**Step 2 — for `custom_intelligence`, pick a backend:**
+
+| Backend | You're asked for | Notes |
+|---------|-----------------|-------|
+| `jarvis_server` | url + key | Jarvis server hosts the model; same url + key also become the scan push target |
+| `litellm` | url + key + model | Any model hosted OpenAI-style, local or remote (vLLM, LM Studio, LiteLLM proxy, OpenRouter, Azure…) |
+| `ollama` | url + key (optional) + model | Local Ollama server |
+
+Non-interactive (flags do the same flow):
+
+```bash
+jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key JRV-KEY-123
+jarvis-graphify configure --mode litellm --url http://127.0.0.1:8000/v1 --key sk-local --model_name llama-3.1-8b
+jarvis-graphify configure --mode ollama --url http://127.0.0.1:11434 --key '' --model_name qwen3:4b
+jarvis-graphify configure --mode claude --yes
+```
+
+Answers are written to `jarvis-graphify-in/settings.json` (hand-editable, see below).
 
 ### 3 · Run
 
@@ -83,7 +109,30 @@ xdg-open jarvis-graphify-out/graph.html # Linux
 
 ## LLM backends
 
-Set `"backend"` in `jarvis-graphify-in/settings.json` to one of: `ollama` · `litellm` · `bedrock`
+Set `"backend"` in `jarvis-graphify-in/settings.json` to one of:
+`jarvis_server` · `ollama` · `litellm` · `bedrock` — or just run `jarvis-graphify configure`.
+
+---
+
+### Option 0 — Jarvis server (url + key)
+
+Your Jarvis server hosts the model (OpenAI-compatible endpoint at
+`<url>/api/v1/llm/chat/completions`) — the server picks the model. The same
+url + key are saved as the **push target**, so scan results upload there too.
+
+```json
+{
+  "llm": {
+    "backend": "jarvis_server",
+    "jarvis_server": {
+      "url": "https://jarvis.example.com",
+      "api_key": "JRV-KEY-123",
+      "model": "",
+      "ssl_verify": true
+    }
+  }
+}
+```
 
 ---
 
@@ -234,32 +283,100 @@ pip install boto3
 
 ## All commands
 
+Every command, every flag, with examples.
+
+### `jarvis-graphify configure` — guided config (also runs at install time)
+
 ```bash
-# ── Full scan ────────────────────────────────────────────────────────────────
+jarvis-graphify configure                # interactive: mode → backend → url/key/model
+jarvis-graphify --configure              # flag form — identical
+jarvis-graphify setup                    # alias of the same flow
+
+# custom_intelligence backends, non-interactive:
+jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key JRV-KEY-123
+jarvis-graphify configure --mode litellm --url http://127.0.0.1:8000/v1 --key sk-local --model_name llama-3.1-8b
+jarvis-graphify configure --mode ollama --url http://127.0.0.1:11434 --key '' --model_name qwen3:4b
+
+# AI-assisted modes (assistant performs the scan — caution + confirmation):
+jarvis-graphify configure --mode claude --yes
+jarvis-graphify configure --mode cursor --yes
+jarvis-graphify configure --mode codex  --yes
+
+jarvis-graphify configure --force        # overwrite existing settings.json
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--mode` | `custom_intelligence` \| `claude` \| `cursor` \| `codex` — or a backend name (`jarvis_server`/`litellm`/`ollama`) as custom shorthand |
+| `--backend` | backend for custom mode |
+| `--url` | backend / Jarvis server URL |
+| `--key` (alias `--api-key`) | API key — `''` for none (e.g. local Ollama) |
+| `--model_name` (alias `--model`) | model name (litellm / ollama; optional for jarvis_server) |
+| `--yes` | accept the sensitive-data caution for AI modes |
+| `--force` | overwrite existing config |
+
+### `jarvis-graphify [scan]` — full scan (default command)
+
+```bash
 jarvis-graphify .                        # full scan — current directory
 jarvis-graphify /path/to/project         # scan any directory
-jarvis-graphify . --no-enrich            # structure + sensitive detection only (no LLM)
+jarvis-graphify scan .                   # explicit subcommand form
+jarvis-graphify . --no-enrich            # structure + secrets only, no LLM (AI-mode step 1)
+jarvis-graphify . --no-integrate         # skip Cursor/Claude/Codex rule injection
 jarvis-graphify . --out /tmp/my-graph    # custom output directory
 jarvis-graphify . -v                     # verbose — show each node as enriched
+```
 
-# ── Incremental update ───────────────────────────────────────────────────────
+Each enriched scan bumps the version (`<project>_vN`), writes `graph.json` /
+`graph.html` / `graph_understanding.md` / `feedback.md`, records metadata
+(project uuid, datetime, machine user, machine IP, path) in `project_meta.json`,
+snapshots to `history/<project>_vN/`, and pushes to the Jarvis server when configured.
+
+### `jarvis-graphify update` — incremental
+
+```bash
 jarvis-graphify update                   # re-enrich only new/modified files (fast)
 jarvis-graphify update /path/to/project  # update a specific project
+jarvis-graphify update --no-enrich       # reuse summaries; leave changed nodes empty (AI modes)
 jarvis-graphify update --force-libraries # also re-enrich library summaries
-jarvis-graphify update -v                # verbose — show which nodes are updated
+jarvis-graphify update -v                # verbose
+```
 
-# ── Config + IDE integration ─────────────────────────────────────────────────
-jarvis-graphify scan .                   # explicit subcommand form
-jarvis-graphify setup                    # create config in current directory
-jarvis-graphify setup --force            # overwrite existing config
+### `jarvis-graphify render` — finalise a scan from graph.json (AI modes)
 
-jarvis-graphify integrate                # wire graph into all AI tools (Cursor + Claude Code + Codex)
+```bash
+jarvis-graphify render .                 # re-render html/md/feedback, assign next
+                                         # version, record metadata, push to server
+```
+
+### `jarvis-graphify server-config` — Jarvis server push target
+
+```bash
+jarvis-graphify server-config --url https://jarvis.example.com --api-key JRV-KEY-123
+jarvis-graphify server-config --no-ssl-verify --url https://jarvis.internal --api-key K
+jarvis-graphify server-config --show     # current config (key masked)
+jarvis-graphify server-config --clear    # stop pushing
+```
+
+Stored at `~/.jarvis-graphify/server.json` (chmod 600). Every scan / update /
+render then uploads metadata + all output files to a per-project folder on the
+server (keyed by project uuid).
+
+### `jarvis-graphify integrate` — (re)write AI-tool rules
+
+```bash
+jarvis-graphify integrate                # all: Cursor + Claude Code + Codex
 jarvis-graphify integrate --cursor       # Cursor only  → .cursor/rules/jarvis-graphify.mdc
 jarvis-graphify integrate --claude       # Claude Code  → CLAUDE.md
 jarvis-graphify integrate --codex        # Codex / OpenAI Agents → AGENTS.md
+```
 
+### Misc
+
+```bash
 jarvis-graphify --version
 jarvis-graphify --help
+jarvis-graphify <command> --help
 ```
 
 ---

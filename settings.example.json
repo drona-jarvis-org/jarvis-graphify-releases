@@ -1,19 +1,58 @@
 {
-  "_readme": "jarvis-graphify LLM config. Copy to jarvis-graphify-in/settings.json in your project. Set 'backend' to 'ollama', 'litellm', or 'bedrock'. Only the matching block needs to be filled in.",
-
+  "_readme": "jarvis-graphify LLM config. Set 'backend' to 'ollama', 'litellm', or 'bedrock'.\nOnly the block matching your chosen backend needs to be filled in.\n'mode' is set by 'jarvis-graphify setup': custom_intelligence (your own LLM does the enrichment) or claude / cursor / codex (the AI assistant does it).",
+  "mode": "custom_intelligence",
+  "exclude": {
+    "_readme": "Optional. Control what gets LLM summaries and what gets sensitivity scanning.\nsensitivity_files: glob patterns for files to skip when scanning for secrets.\n  .env, .env.local, .yaml, .json, .pem etc. are always scanned \u2014 add patterns\n  here to suppress false positives (e.g. test fixtures, generated configs).",
+    "libraries": [
+      "os",
+      "sys",
+      "re",
+      "json",
+      "typing",
+      "abc",
+      "pathlib",
+      "collections",
+      "itertools",
+      "functools"
+    ],
+    "methods": [
+      "__init__",
+      "__str__",
+      "__repr__",
+      "__eq__",
+      "__hash__",
+      "__len__",
+      "__iter__",
+      "__next__"
+    ],
+    "_enrich_note": "Docs and lockfiles (README*, CHANGELOG*, LICENSE*, docs/**, *.md, package-lock.json, poetry.lock, \u2026) are ALWAYS skipped for LLM enrichment to save tokens \u2014 no need to list them here.",
+    "enrich_files": [],
+    "sensitivity_files": [
+      "tests/**",
+      "**/*.example",
+      "**/*.sample",
+      "**/*.test.*",
+      "**/fixtures/**",
+      "**/testdata/**"
+    ]
+  },
   "llm": {
-
     "backend": "ollama",
-
+    "jarvis_server": {
+      "_comment": "Your Jarvis server hosts the model (OpenAI-compatible endpoint at <url>/api/v1/llm/chat/completions). The server picks the model unless 'model' is set. The same url + api_key are also used to push scan results to the server.",
+      "url": "https://jarvis.example.com",
+      "api_key": "",
+      "model": "",
+      "ssl_verify": true
+    },
     "ollama": {
-      "_comment": "Local or self-hosted Ollama server. Supports any model available via Ollama (qwen3, llama3, mistral, phi3, gemma2, deepseek, etc.). Start: ollama serve | Pull: ollama pull qwen3:4b",
+      "_comment": "Local or self-hosted Ollama server. Supports any model available via Ollama (qwen3, llama3, mistral, phi3, gemma2, deepseek, etc.). Start server: ollama serve  |  Pull model: ollama pull qwen3:4b",
       "base_url": "http://127.0.0.1:11434",
       "model": "qwen3:4b",
       "ssl_verify": true
     },
-
     "litellm": {
-      "_comment": "Any OpenAI-compatible API: LiteLLM proxy, vLLM, TensorRT-LLM, custom Python OpenAI-style APIs, OpenRouter (https://openrouter.ai), Azure OpenAI, Groq, Together AI, Anyscale, and more.",
+      "_comment": "Any OpenAI-compatible API. Works with: LiteLLM proxy (self-hosted unified gateway), self-hosted models via vLLM / TensorRT-LLM / custom Python OpenAI-style APIs, OpenRouter (https://openrouter.ai \u2014 100+ models, one API key), Azure OpenAI, OpenAI, Groq, Together AI, Anyscale, and more.",
       "base_url": "https://your-litellm-server.example.com",
       "model": "gpt-4o",
       "api_key": "sk-YOUR-KEY-HERE",
@@ -21,22 +60,20 @@
       "ssl_verify": true,
       "_ssl_note": "Set ssl_verify to false for corporate or self-signed certificates"
     },
-
     "bedrock": {
-      "_comment": "AWS Bedrock — Claude, Llama, Mistral, Titan and more. Credentials: (1) keys below, (2) AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars, (3) ~/.aws/credentials, (4) IAM role.",
+      "_comment": "AWS Bedrock \u2014 managed foundation models (Claude, Llama, Mistral, Titan, etc.). Credentials are read in order: (1) explicit keys below, (2) env vars AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN, (3) ~/.aws/credentials profile, (4) attached IAM role (EC2/ECS/Lambda).",
       "region": "us-east-1",
       "model_id": "anthropic.claude-3-5-haiku-20241022-v1:0",
       "aws_access_key_id": "",
       "aws_secret_access_key": "",
       "aws_session_token": "",
       "_model_examples": {
-        "claude_haiku":  "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "claude_haiku": "anthropic.claude-3-5-haiku-20241022-v1:0",
         "claude_sonnet": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-        "llama3_70b":    "meta.llama3-3-70b-instruct-v1:0",
+        "llama3_70b": "meta.llama3-3-70b-instruct-v1:0",
         "mistral_large": "mistral.mistral-large-2402-v1:0",
         "titan_premier": "amazon.titan-text-premier-v1:0"
       }
     }
-
   }
 }

@@ -14,12 +14,12 @@ param(
 )
 
 $Tool       = "jarvis-graphify"
-$Version    = "1.1.0"
+$Version    = "1.2.0"
 $ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $VenvDir    = "$env:USERPROFILE\.jarvis-graphify\venv"
 $UserBin    = "$env:USERPROFILE\.local\bin"
 $GlobalBin  = "C:\Program Files\jarvis-graphify"
-$ReleaseUrl = "https://github.com/drona-jarvis-org/jarvis_graphify/releases/download/v${Version}/jarvis_graphify-${Version}-py3-none-any.whl"
+$ReleaseUrl = "https://github.com/drona-jarvis-org/jarvis-graphify-releases/releases/download/v${Version}/jarvis_graphify-${Version}-py3-none-any.whl"
 
 function Write-Step($msg) { Write-Host "[jarvis-graphify] $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "[warning] $msg" -ForegroundColor Yellow }
@@ -110,14 +110,42 @@ if ($Global) {
 $InstalledVer = & $VenvBin --version 2>&1
 Write-Host ""
 Write-Step "Installed: $InstalledVer"
+
+# ── Configure (interactive) ───────────────────────────────────────────────
+# Pick a mode at install time:
+#   1. custom_intelligence → then a backend:
+#        jarvis_server (url + key — also becomes the scan push target)
+#        litellm       (any OpenAI-style hosted model — url + key + model)
+#        ollama        (local — url + key + model)
+#   2-4. claude / cursor / codex → the AI assistant performs the scan
+#        (caution shown: sensitive project data goes to that provider)
+if ([Environment]::UserInteractive) {
+    Write-Host ""
+    $ConfigureNow = Read-Host "Configure jarvis-graphify now? [Y/n]"
+    if ($ConfigureNow -ne "n" -and $ConfigureNow -ne "N") {
+        Write-Host ""
+        & $VenvBin configure
+        if ($LASTEXITCODE -ne 0) { Write-Warn "Configuration skipped — run later:  jarvis-graphify configure" }
+    } else {
+        Write-Step "Skipped. Configure any time:  jarvis-graphify configure"
+    }
+} else {
+    Write-Warn "Non-interactive install — configure later with:"
+    Write-Warn "  jarvis-graphify configure                                    # guided"
+    Write-Warn "  jarvis-graphify configure --mode ollama --url http://127.0.0.1:11434 --model_name qwen3:4b"
+    Write-Warn "  jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key <KEY>"
+}
+
 Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor Cyan
 Write-Host "    1. Restart PowerShell"
 Write-Host "    2. Go to your project:     cd C:\path\to\your-project"
-Write-Host "    3. Create config:          jarvis-graphify setup"
-Write-Host "    4. Edit the config:        notepad jarvis-graphify-in\settings.json"
-Write-Host "    5. Run the scan:           jarvis-graphify ."
-Write-Host "    6. Open the graph:         start jarvis-graphify-out\graph.html"
+Write-Host "    3. Configure:              jarvis-graphify configure   (skip if done above)"
+Write-Host "    4. Run the scan:           jarvis-graphify ."
+Write-Host "    5. Open the graph:         start jarvis-graphify-out\graph.html"
+Write-Host ""
+Write-Host "  Push results to a Jarvis server:" -ForegroundColor Cyan
+Write-Host "    jarvis-graphify server-config --url https://jarvis.example.com --api-key <KEY>"
 Write-Host ""
 Write-Host "  Docs & source:  https://github.com/drona-jarvis-org/jarvis_graphify" -ForegroundColor Cyan
 Write-Host ""
