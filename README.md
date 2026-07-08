@@ -74,9 +74,14 @@ jarvis-graphify configure        # setup is an alias of the same flow
 | # | Mode | Who does the enrichment | Data privacy |
 |---|------|------------------------|--------------|
 | 1 | `custom_intelligence` | Your own model (step 2 below) | Code stays with the endpoint you control |
-| 2 | `claude` | Claude Code — scan + update skills in `.claude/skills/` | ⚠ **sensitive project data goes to Anthropic** |
+| 2 | `claude` | Claude Code — one smart `/jarvis-graphify-scan` skill in `.claude/skills/` (full scan first time, incremental after — only files modified since the last scan), enriched with **Claude's own model** | ⚠ **sensitive project data goes to Anthropic** |
 | 3 | `cursor` | Cursor's AI — rules in `.cursor/rules/` | ⚠ **sensitive project data goes to Cursor** |
 | 4 | `codex` | Codex — workflow in `AGENTS.md` | ⚠ **sensitive project data goes to OpenAI** |
+
+> **AI modes use the tool's own logged-in model** — nothing from settings, no API key.
+> Bonus: if the tool's headless CLI is installed (`claude`, `cursor-agent`, `codex`),
+> a plain `jarvis-graphify .` / `jarvis-graphify update .` enriches automatically with
+> that model (batched ~15 nodes per call). Without the CLI, run the skill inside the tool.
 
 **Step 2 — for `custom_intelligence`, pick a backend:**
 
