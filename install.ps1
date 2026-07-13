@@ -121,17 +121,17 @@ Write-Step "Installed: $InstalledVer"
 #        (caution shown: sensitive project data goes to that provider)
 if ([Environment]::UserInteractive) {
     Write-Host ""
-    $ConfigureNow = Read-Host "Configure jarvis-graphify now? [Y/n]"
+    $ConfigureNow = Read-Host "Configure jarvis-graphify now (GLOBAL - applies to all your projects)? [Y/n]"
     if ($ConfigureNow -ne "n" -and $ConfigureNow -ne "N") {
         Write-Host ""
-        & $VenvBin configure
+        & $VenvBin configure --global
         if ($LASTEXITCODE -ne 0) { Write-Warn "Configuration skipped — run later:  jarvis-graphify configure" }
     } else {
         Write-Step "Skipped. Configure any time:  jarvis-graphify configure"
     }
 } else {
     Write-Warn "Non-interactive install — configure later with:"
-    Write-Warn "  jarvis-graphify configure                                    # guided"
+    Write-Warn "  jarvis-graphify configure --global                           # guided, all projects"
     Write-Warn "  jarvis-graphify configure --mode ollama --url http://127.0.0.1:11434 --model_name qwen3:4b"
     Write-Warn "  jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key <KEY>"
 }
@@ -140,7 +140,7 @@ Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor Cyan
 Write-Host "    1. Restart PowerShell"
 Write-Host "    2. Go to your project:     cd C:\path\to\your-project"
-Write-Host "    3. Configure:              jarvis-graphify configure   (skip if done above)"
+Write-Host "    3. Configure:              jarvis-graphify configure --global   (skip if done above)"
 Write-Host "    4. Run the scan:           jarvis-graphify ."
 Write-Host "    5. Open the graph:         start jarvis-graphify-out\graph.html"
 Write-Host ""

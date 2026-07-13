@@ -109,16 +109,16 @@ info "Installed: $VER"
 # Works even when piped via `curl | bash` by reading from /dev/tty.
 if [ -e /dev/tty ] && [ -t 1 ]; then
     echo ""
-    read -r -p "Configure jarvis-graphify now? [Y/n] " CONFIGURE_NOW < /dev/tty || CONFIGURE_NOW="n"
+    read -r -p "Configure jarvis-graphify now (GLOBAL — applies to all your projects)? [Y/n] " CONFIGURE_NOW < /dev/tty || CONFIGURE_NOW="n"
     if [ "${CONFIGURE_NOW:-y}" != "n" ] && [ "${CONFIGURE_NOW:-y}" != "N" ]; then
         echo ""
-        "$BIN" configure < /dev/tty || warn "Configuration skipped — run later:  $TOOL configure"
+        "$BIN" configure --global < /dev/tty || warn "Configuration skipped — run later:  $TOOL configure --global"
     else
         info "Skipped. Configure any time:  $TOOL configure"
     fi
 else
     warn "Non-interactive install — configure later with:"
-    warn "  $TOOL configure                                    # guided"
+    warn "  $TOOL configure --global                           # guided, all projects"
     warn "  $TOOL configure --mode ollama --url http://127.0.0.1:11434 --model_name qwen3:4b"
     warn "  $TOOL configure --mode jarvis_server --url https://jarvis.example.com --key <KEY>"
 fi
@@ -127,7 +127,7 @@ echo ""
 echo "  Next steps:"
 echo "    1. Restart terminal  (or: source ~/.zshrc)"
 echo "    2. Go to project:    cd /path/to/your-project"
-echo "    3. Configure:        $TOOL configure   (skip if done above)"
+echo "    3. Configure:        $TOOL configure --global   (skip if done above; per-project: without --global)"
 echo "    4. Run scan:         $TOOL ."
 echo "    5. Open graph:       open jarvis-graphify-out/graph.html"
 echo ""
