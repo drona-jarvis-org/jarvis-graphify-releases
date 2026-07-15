@@ -1,13 +1,16 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# jarvis-graphify installer — Windows (PowerShell)
+# =============================================================================
+# jarvis-graphify installer - Windows (PowerShell)
 #
 # One-liner install (downloads wheel from GitHub Releases):
-#   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/drona-jarvis-org/jarvis_graphify/main/release/install.ps1" -OutFile install.ps1; .\install.ps1
+#   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/drona-jarvis-org/jarvis-graphify-releases/main/install.ps1" -OutFile install.ps1; .\install.ps1
 #
 # From a cloned / unzipped release folder:
 #   .\install.ps1                     # user install (no admin needed)
 #   .\install.ps1 -Global             # system-wide (requires admin)
-# ─────────────────────────────────────────────────────────────────────────────
+#
+# NOTE: This file is intentionally ASCII-only so Windows PowerShell 5.1 parses it
+# correctly regardless of file encoding. Do not add box-drawing/emoji/unicode.
+# =============================================================================
 param(
     [switch]$Global = $false,
     [switch]$Force  = $false
@@ -26,12 +29,12 @@ function Write-Warn($msg) { Write-Host "[warning] $msg" -ForegroundColor Yellow 
 function Write-Err($msg)  { Write-Host "[error] $msg" -ForegroundColor Red; exit 1 }
 
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "  ║      jarvis-graphify installer       ║" -ForegroundColor Cyan
-Write-Host "  ╚══════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "  ==========================================" -ForegroundColor Cyan
+Write-Host "         jarvis-graphify installer" -ForegroundColor Cyan
+Write-Host "  ==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# ── Detect Python ─────────────────────────────────────────────────────────
+# -- Detect Python -----------------------------------------------------------
 $Python = $null
 foreach ($cmd in @("python3", "python")) {
     try {
@@ -44,14 +47,14 @@ if (-not $Python) {
 }
 Write-Step "Using $(& $Python --version)"
 
-# ── Create virtual environment ────────────────────────────────────────────
+# -- Create virtual environment ----------------------------------------------
 Write-Step "Creating virtual environment at $VenvDir ..."
 New-Item -ItemType Directory -Force -Path (Split-Path $VenvDir) | Out-Null
 & $Python -m venv $VenvDir
 $VenvPip = "$VenvDir\Scripts\pip.exe"
 $VenvBin = "$VenvDir\Scripts\jarvis-graphify.exe"
 
-# ── Locate or download wheel ──────────────────────────────────────────────
+# -- Locate or download wheel ------------------------------------------------
 $WheelPath = $null
 $TmpWhl    = $null
 
@@ -69,7 +72,7 @@ if (-not $WheelPath) {
         Invoke-WebRequest -Uri $ReleaseUrl -OutFile $TmpWhl -UseBasicParsing -ErrorAction Stop
         $WheelPath = $TmpWhl
     } catch {
-        Write-Err "Download failed: $_`nVisit https://github.com/drona-jarvis-org/jarvis_graphify/releases"
+        Write-Err "Download failed: $_`nVisit https://github.com/drona-jarvis-org/jarvis-graphify-releases/releases"
     }
 }
 
@@ -81,10 +84,10 @@ Write-Step "Installing from $(Split-Path -Leaf $WheelPath) ..."
 if ($TmpWhl -and (Test-Path $TmpWhl)) { Remove-Item $TmpWhl -Force }
 
 if (-not (Test-Path $VenvBin)) {
-    Write-Err "Install failed — executable not found at $VenvBin"
+    Write-Err "Install failed - executable not found at $VenvBin"
 }
 
-# ── Link / add to PATH ────────────────────────────────────────────────────
+# -- Link / add to PATH ------------------------------------------------------
 if ($Global) {
     Write-Step "Installing system-wide to $GlobalBin ..."
     New-Item -ItemType Directory -Force -Path $GlobalBin | Out-Null
@@ -106,18 +109,18 @@ if ($Global) {
     Write-Warn "Close and reopen PowerShell for PATH changes to take effect."
 }
 
-# ── Done ──────────────────────────────────────────────────────────────────
+# -- Done --------------------------------------------------------------------
 $InstalledVer = & $VenvBin --version 2>&1
 Write-Host ""
 Write-Step "Installed: $InstalledVer"
 
-# ── Configure (interactive) ───────────────────────────────────────────────
+# -- Configure (interactive) -------------------------------------------------
 # Pick a mode at install time:
-#   1. custom_intelligence → then a backend:
-#        jarvis_server (url + key — also becomes the scan push target)
-#        litellm       (any OpenAI-style hosted model — url + key + model)
-#        ollama        (local — url + key + model)
-#   2-4. claude / cursor / codex → the AI assistant performs the scan
+#   1. custom_intelligence -> then a backend:
+#        jarvis_server (url + key - also becomes the scan push target)
+#        litellm       (any OpenAI-style hosted model - url + key + model)
+#        ollama        (local - url + key + model)
+#   2-4. claude / cursor / codex -> the AI assistant performs the scan
 #        (caution shown: sensitive project data goes to that provider)
 if ([Environment]::UserInteractive) {
     Write-Host ""
@@ -125,15 +128,15 @@ if ([Environment]::UserInteractive) {
     if ($ConfigureNow -ne "n" -and $ConfigureNow -ne "N") {
         Write-Host ""
         & $VenvBin configure --global
-        if ($LASTEXITCODE -ne 0) { Write-Warn "Configuration skipped — run later:  jarvis-graphify configure" }
+        if ($LASTEXITCODE -ne 0) { Write-Warn "Configuration skipped - run later:  jarvis-graphify configure" }
     } else {
         Write-Step "Skipped. Configure any time:  jarvis-graphify configure"
     }
 } else {
-    Write-Warn "Non-interactive install — configure later with:"
+    Write-Warn "Non-interactive install - configure later with:"
     Write-Warn "  jarvis-graphify configure --global                           # guided, all projects"
     Write-Warn "  jarvis-graphify configure --mode ollama --url http://127.0.0.1:11434 --model_name qwen3:4b"
-    Write-Warn "  jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key <KEY>"
+    Write-Warn "  jarvis-graphify configure --mode jarvis_server --url https://jarvis.example.com --key KEY"
 }
 
 Write-Host ""
@@ -145,7 +148,7 @@ Write-Host "    4. Run the scan:           jarvis-graphify ."
 Write-Host "    5. Open the graph:         start jarvis-graphify-out\graph.html"
 Write-Host ""
 Write-Host "  Push results to a Jarvis server:" -ForegroundColor Cyan
-Write-Host "    jarvis-graphify server-config --url https://jarvis.example.com --api-key <KEY>"
+Write-Host "    jarvis-graphify server-config --url https://jarvis.example.com --api-key KEY"
 Write-Host ""
-Write-Host "  Docs & source:  https://github.com/drona-jarvis-org/jarvis_graphify" -ForegroundColor Cyan
+Write-Host "  Docs and source:  https://github.com/drona-jarvis-org/jarvis-graphify-releases" -ForegroundColor Cyan
 Write-Host ""
