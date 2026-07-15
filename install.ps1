@@ -55,8 +55,9 @@ $VenvPip = "$VenvDir\Scripts\pip.exe"
 $VenvBin = "$VenvDir\Scripts\jarvis-graphify.exe"
 
 # -- Locate or download wheel ------------------------------------------------
+$WheelName = "jarvis_graphify-${Version}-py3-none-any.whl"
 $WheelPath = $null
-$TmpWhl    = $null
+$TmpDir    = $null
 
 # 1. Try local dist\ (when run from a cloned / unzipped release folder)
 if ($ScriptDir) {
@@ -65,23 +66,27 @@ if ($ScriptDir) {
 }
 
 # 2. Download from GitHub Releases (one-liner install)
+#    IMPORTANT: pip validates the wheel filename, so it must keep its real name
+#    (name-version-...-.whl). Download into a temp DIR under the correct name.
 if (-not $WheelPath) {
     Write-Step "Downloading jarvis-graphify v${Version} from GitHub Releases..."
-    $TmpWhl = [System.IO.Path]::GetTempFileName() -replace '\.tmp$', '.whl'
+    $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("jarvis-graphify-dl-" + [System.Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $TmpDir | Out-Null
+    $WheelPath = Join-Path $TmpDir $WheelName
     try {
-        Invoke-WebRequest -Uri $ReleaseUrl -OutFile $TmpWhl -UseBasicParsing -ErrorAction Stop
-        $WheelPath = $TmpWhl
+        Invoke-WebRequest -Uri $ReleaseUrl -OutFile $WheelPath -UseBasicParsing -ErrorAction Stop
     } catch {
         Write-Err "Download failed: $_`nVisit https://github.com/drona-jarvis-org/jarvis-graphify-releases/releases"
     }
 }
 
 Write-Step "Installing from $(Split-Path -Leaf $WheelPath) ..."
-& $VenvPip install --upgrade pip --quiet
+# Upgrade pip via `python -m pip` (pip cannot upgrade itself while pip.exe runs on Windows).
+& "$VenvDir\Scripts\python.exe" -m pip install --upgrade pip --quiet 2>$null
 & $VenvPip install --force-reinstall $WheelPath --quiet
 
-# Clean up temp file
-if ($TmpWhl -and (Test-Path $TmpWhl)) { Remove-Item $TmpWhl -Force }
+# Clean up temp download dir
+if ($TmpDir -and (Test-Path $TmpDir)) { Remove-Item $TmpDir -Recurse -Force -ErrorAction SilentlyContinue }
 
 if (-not (Test-Path $VenvBin)) {
     Write-Err "Install failed - executable not found at $VenvBin"
