@@ -113,6 +113,12 @@ if [ -e /dev/tty ] && [ -t 1 ]; then
     if [ "${CONFIGURE_NOW:-y}" != "n" ] && [ "${CONFIGURE_NOW:-y}" != "N" ]; then
         echo ""
         "$BIN" configure --global < /dev/tty || warn "Configuration skipped — run later:  $TOOL configure --global"
+        # optional: local semantic-search embedding model (downloads a small ollama model)
+        read -r -p "Enable local semantic search? Downloads a small Ollama embedding model (needs Ollama). [y/N] " EMB < /dev/tty || EMB="n"
+        if [ "$EMB" = "y" ] || [ "$EMB" = "Y" ]; then
+            "$BIN" configure --global --embedding-model nomic-embed-text < /dev/tty \
+              || warn "Embedding setup skipped — run later:  $TOOL configure --embedding-model nomic-embed-text"
+        fi
     else
         info "Skipped. Configure any time:  $TOOL configure"
     fi

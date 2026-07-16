@@ -134,6 +134,11 @@ if ([Environment]::UserInteractive) {
         Write-Host ""
         & $VenvBin configure --global
         if ($LASTEXITCODE -ne 0) { Write-Warn "Configuration skipped - run later:  jarvis-graphify configure" }
+        $Emb = Read-Host "Enable local semantic search? Downloads a small Ollama embedding model (needs Ollama). [y/N]"
+        if ($Emb -eq "y" -or $Emb -eq "Y") {
+            & $VenvBin configure --global --embedding-model nomic-embed-text
+            if ($LASTEXITCODE -ne 0) { Write-Warn "Embedding setup skipped - run later:  jarvis-graphify configure --embedding-model nomic-embed-text" }
+        }
     } else {
         Write-Step "Skipped. Configure any time:  jarvis-graphify configure"
     }
