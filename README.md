@@ -288,6 +288,24 @@ pip install boto3
 
 ## All commands
 
+**Complete list (v1.2.0):**
+
+| Command | What it does |
+|---------|-------------|
+| `jarvis-graphify configure` (alias `setup`) | pick mode + backend + url/key/model; `--global`, `--embedding-model` |
+| `jarvis-graphify .` | full scan + enrich (default). Flags: `--no-enrich --offline --no-integrate -v --out` |
+| `jarvis-graphify update .` | incremental — only changed files |
+| `jarvis-graphify render .` | finalise AI-filled graph.json -> version, metadata, push |
+| `jarvis-graphify serve-mcp .` | MCP server (10 tools) for Claude Code / Cursor / Codex |
+| `jarvis-graphify ask "..."` | answer a question from the graph, no source reading |
+| `jarvis-graphify find "..."` | semantic/keyword symbol search (JSON) |
+| `jarvis-graphify assess "..." --steps a,b` | drift check before coding (graph + LLM) |
+| `jarvis-graphify draft "..." --targets X` | grounded, verified code generation via your custom model |
+| `jarvis-graphify embed .` | build semantic vectors from existing graph.json |
+| `jarvis-graphify render-html .` | rebuild only graph.html (offline, no LLM) |
+| `jarvis-graphify server-config ...` | set Jarvis push target (`--show` / `--clear`) |
+| `jarvis-graphify integrate` | (re)write Cursor/Claude/Codex rules + MCP registration |
+
 Every command, every flag, with examples.
 
 ### `jarvis-graphify configure` — guided config (also runs at install time)
